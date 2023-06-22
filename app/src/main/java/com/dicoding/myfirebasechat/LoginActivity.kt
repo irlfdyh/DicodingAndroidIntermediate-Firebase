@@ -2,10 +2,15 @@ package com.dicoding.myfirebasechat
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.dicoding.myfirebasechat.databinding.ActivityLoginBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -40,6 +45,10 @@ class LoginActivity : AppCompatActivity() {
 
         binding.signInButton.setOnClickListener {
             signIn()
+        }
+
+        if (Build.VERSION.SDK_INT >= 33) {
+            setupNotification()
         }
     }
 
@@ -99,8 +108,39 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupNotification() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                POST_NOTIFICATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                Log.i(TAG, "Permission already granted")
+            }
+            shouldShowRequestPermissionRationale(POST_NOTIFICATION) -> {
+                Log.i(TAG, "Permission should show rationale")
+            }
+            else -> {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    Log.i(TAG, "Request permission")
+                    requestPermissionLauncher.launch(POST_NOTIFICATION)
+                }
+            }
+        }
+    }
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                Toast.makeText(this, "Akses notifikasi telah diberikan", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Akses notifikasi telah ditolak", Toast.LENGTH_SHORT).show()
+            }
+        }
+
     companion object {
         private const val TAG = "LoginActivity"
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        private const val POST_NOTIFICATION = android.Manifest.permission.POST_NOTIFICATIONS
     }
 
 }
